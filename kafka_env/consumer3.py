@@ -2,17 +2,27 @@ import json
 import time
 from collections import deque, defaultdict, Counter
 from kafka import KafkaConsumer
+from pymongo import MongoClient
+
+
+
+# MongoDB connection setup
+client = MongoClient('mongodb://localhost:27017')  
+db = client['RecommendationDB']
+recommendations_collection= db['user_recommendations']
+
+
 
 # Initialize the global dictionary for product co-purchase counts
-product_copurchase = defaultdict(Counter)
+product_purchase = defaultdict(Counter)
 
 # Function to update co-purchase information
 def update_copurchase(asin, also_buy):
     if not also_buy:
         return
     for associated_asin in also_buy:
-        product_copurchase[asin][associated_asin] += 1
-        product_copurchase[associated_asin][asin] += 1  # Co-purchase is bidirectional
+        product_purchase[asin][associated_asin] += 1
+        product_purchase[associated_asin][asin] += 1  # Co-purchase is bidirectional
 
 # Function to process each window
 def transform_data(window):
@@ -88,14 +98,21 @@ for message in consumer3:
     message_count += 1
 
     if message_count % 5 == 0:
-        print("Product Recommendations Based on Co-Purchases:")
-        for asin, counts in product_copurchase.items():
-            print(f"For ASIN {asin}: Top Recommendations: {counts.most_common(3)}")
+        # print("Product Recommendations Based on Co-Purchases:")
+        for asin, counts in product_purchase.items():
+            top_recommendations = counts.most_common(3)
+            # print(f"For ASIN {asin}: Top Recommendations: {top_recommendations}")
+            # Insert recommendations into MongoDB
+        try:
+            recommendations_collection.insert_one({
+            "asin": asin,
+            "top_recommendations": [
+            {"recommended_asin": rec[0], "Count": rec[1]} for rec in top_recommendations
+            ]
+         })
+        except Exception as e:
+            print(f"An error occurred while inserting data: {e}")
+
 
 # Close the consumer when done
 consumer3.close()
-
-
-
-
-
