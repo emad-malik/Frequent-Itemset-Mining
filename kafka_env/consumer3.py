@@ -34,6 +34,13 @@ def analyze_data(window):
     initial_items.sort(key=lambda x: -len(x[1]))  # Sort by frequency (descending)
     frequent_itemsets = {}
     eclat([], initial_items, min_support, frequent_itemsets)
+    frequent_pairs= {itemset: support for itemset, support in frequent_itemsets.items() if len(itemset) == 2}
+    for itemset, support in frequent_pairs.items():
+        print(f"Frequent itemsets: {set(itemset)}, Support: {support}")
+    rules= generate_rules(frequent_itemsets)
+    for antecedent, consequent, support, confidence in rules:
+        print(f"Rule: If {set(antecedent)} then {set(consequent)}, Support: {support}, Confidence: {confidence}")
+
 
 # Function to find frequent itemsets using ECLAT
 def eclat(prefix, items, min_support, frequent_itemsets):
@@ -45,6 +52,21 @@ def eclat(prefix, items, min_support, frequent_itemsets):
             suffix_items = [(other_item, transactions.intersection(other_transactions)) for other_item, other_transactions in items if len(transactions.intersection(other_transactions)) >= min_support]
             suffix_items.sort(key=lambda x: len(x[1]), reverse=True)
             eclat(new_prefix, suffix_items, min_support, frequent_itemsets)
+
+# function to generate association rules
+def generate_rules(frequent_itemsets, min_confidence= 0.2):
+    rules= []
+    for itemset in frequent_itemsets:
+        if len(itemset) > 1:
+            for item in itemset:
+                observed= frozenset([item])
+                predicted= itemset - observed
+                rule_support= frequent_itemsets[itemset]
+                antecedent_support= frequent_itemsets[observed]
+                confidence= rule_support / antecedent_support
+                if confidence >= min_confidence:
+                    rules.append((observed, predicted, rule_support, confidence))
+    return rules
 
 # Kafka consumer setup
 consumer3 = KafkaConsumer('amazon_metadata_stream', bootstrap_servers=['localhost:9092'], auto_offset_reset='earliest', value_deserializer=lambda x: json.loads(x.decode('utf-8')))
@@ -65,14 +87,15 @@ for message in consumer3:
     # Increment the message counter
     message_count += 1
 
-    # Print top recommendations periodically (e.g., every 100 messages)
-    if message_count % 100 == 0:
+    if message_count % 5 == 0:
         print("Product Recommendations Based on Co-Purchases:")
         for asin, counts in product_copurchase.items():
             print(f"For ASIN {asin}: Top Recommendations: {counts.most_common(3)}")
 
 # Close the consumer when done
 consumer3.close()
+
+
 
 
 
