@@ -3,6 +3,13 @@ import json
 from collections import defaultdict
 from itertools import combinations
 import sys
+from pymongo import MongoClient
+
+
+# MongoDB connection setup
+client = MongoClient('mongodb://localhost:27017')  
+db = client['PCY']
+pcy_collection= db['pcy_scores']
 
 # Function to initialize the PCY algorithm
 def initialize_pcy(bucket_size):
@@ -35,7 +42,7 @@ def process_messages(consumer, bucket_size, support_threshold):
             item_counts[hash_value].add(item)
         
         # Update frequent itemsets if necessary
-        if sys.getsizeof(frequent_itemsets) > 100: # Adjust based on memory availability
+        if sys.getsizeof(frequent_itemsets) > 10: # Adjust based on memory availability
             update_frequent_itemsets(bitmap, item_counts, frequent_itemsets, support_threshold)
             # Convert defaultdict to regular dictionary for printing
             frequent_itemsets_dict = dict(frequent_itemsets)
@@ -46,13 +53,19 @@ def process_messages(consumer, bucket_size, support_threshold):
                 valid_itemset = [col for col in itemset if col in data]
                 if valid_itemset:
                     itemset_values = [data[col] for col in valid_itemset]
-                    print("Itemset:", valid_itemset, "Values:", itemset_values, "Count:", count)
+                    print("Itemset:", valid_itemset, "Values:", itemset_values)
+                    try:
+                        pcy_collection.insert_one({
+                        "score": count
+                        })
+                    except Exception as e:
+                        print(f"An error occurred while inserting data: {e}")
 
 
 if __name__ == "__main__":
     bootstrap_servers = ['localhost:9092']
     topic_name = 'amazon_metadata_stream'
-    bucket_size = 10 # Choose an appropriate bucket size
+    bucket_size = 2 # Choose an appropriate bucket size
     support_threshold = 2 # Choose an appropriate support threshold
 
     consumer = KafkaConsumer(topic_name, bootstrap_servers=bootstrap_servers)
