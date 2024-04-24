@@ -1,8 +1,7 @@
 # **Streaming Data Insights** #
 I would like to thank my group members for their help.
-**Muhammad Subhan**
+<br>**Muhammad Subhan**</br>
 **Hamza Asad**
-
 ### **Introduction** ###
 This report outlines the design, implementation, and evaluation of a streaming data analysis system developed for analyzing Amazon Metadata. The system consists of a producer application, three consumer applications, and a Kafka topic to facilitate real-time data streaming and processing. Each consumer application is responsible for a specific task, including Apriori algorithm, PCY algorithm, and innovative analysis for recommendation generation based on co-purchase patterns.
 ### Producer Application ###
