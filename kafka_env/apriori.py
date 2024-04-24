@@ -4,12 +4,10 @@ from itertools import combinations
 from pymongo import MongoClient
 import json
 
-
 # MongoDB connection setup
 client = MongoClient('mongodb://localhost:27017')  
 db = client['AprioriDB']
 apriori_collection= db['apriori_scores']
-
 
 class Apriori:
     def __init__(self, min_support, min_confidence):
@@ -44,7 +42,7 @@ class Apriori:
             rule_confidence = support / self.itemsets[pair[0]]
             if rule_confidence >= self.min_confidence:
                 # print(f"{pair[0]} -> {pair[1]}: {rule_confidence:.2f}")
-                # Insert rule confidence into MongoDB
+                # Insert rule confidence into database if score is high enough
                 try:
                     apriori_collection.insert_one({
                         "confidence": rule_confidence
@@ -63,10 +61,9 @@ conf = {
 topic = 'amazon_metadata_stream'
 
 if __name__ == "__main__":
-    apriori = Apriori(min_support=4, min_confidence=0.5)  # Set your minimum support and confidence threshold here
+    apriori = Apriori(min_support=4, min_confidence=0.5)  
     consumer = Consumer(conf)
-    consumer.subscribe([topic])
-
+    consumer.subscribe([topic]) # subscribe to topic
     try:
         while True:
             msg = consumer.poll(timeout=1.0)
@@ -80,9 +77,11 @@ if __name__ == "__main__":
                     print(msg.error())
                     break
             else:
+                # process message for apriori and generate associations
                 apriori.process_message(msg)
                 apriori.generate_associations()
     except KeyboardInterrupt:
         pass
     finally:
         consumer.close()
+
