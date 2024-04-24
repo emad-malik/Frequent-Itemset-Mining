@@ -54,6 +54,7 @@ def process_messages(consumer, bucket_size, support_threshold):
                 if valid_itemset:
                     itemset_values = [data[col] for col in valid_itemset]
                     print("Itemset:", valid_itemset, "Values:", itemset_values)
+                    # save count in database
                     try:
                         pcy_collection.insert_one({
                         "score": count
@@ -65,12 +66,8 @@ def process_messages(consumer, bucket_size, support_threshold):
 if __name__ == "__main__":
     bootstrap_servers = ['localhost:9092']
     topic_name = 'amazon_metadata_stream'
-    bucket_size = 2 # Choose an appropriate bucket size
-    support_threshold = 2 # Choose an appropriate support threshold
-
+    bucket_size = 2 
+    support_threshold = 2 
+    # creeate consumer instance
     consumer = KafkaConsumer(topic_name, bootstrap_servers=bootstrap_servers)
     process_messages(consumer, bucket_size, support_threshold)
-
-
-
-
