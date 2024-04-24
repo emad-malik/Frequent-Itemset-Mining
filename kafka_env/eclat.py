@@ -55,13 +55,16 @@ def analyze_data(window):
 # Function to find frequent itemsets using ECLAT
 def eclat(prefix, items, min_support, frequent_itemsets):
     while items:
+        # pop last transaction
         item, transactions = items.pop()
         if len(transactions) >= min_support:
+            # add current product to prefix; this will create a new itemset
             new_prefix = prefix + [item]
             frequent_itemsets[frozenset(new_prefix)] = len(transactions)
+            # list of products that can form frequent itemsets with new_prefix
             suffix_items = [(other_item, transactions.intersection(other_transactions)) for other_item, other_transactions in items if len(transactions.intersection(other_transactions)) >= min_support]
-            suffix_items.sort(key=lambda x: len(x[1]), reverse=True)
-            eclat(new_prefix, suffix_items, min_support, frequent_itemsets)
+            suffix_items.sort(key=lambda x: len(x[1]), reverse= True) # sort in descending order
+            eclat(new_prefix, suffix_items, min_support, frequent_itemsets) # recursively call eclat
 
 # function to generate association rules
 def generate_rules(frequent_itemsets, min_confidence= 0.2):
